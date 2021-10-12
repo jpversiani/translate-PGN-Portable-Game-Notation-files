@@ -27,11 +27,17 @@ https://www.sublimetext.com/
 2 - After to install the libraries go to the start menu and type cmd. Open the command prompt and enter the following commands (one at a time.):
 
 pip install pandas
+
 pip install xlrd
+
 pip install XlsxWriter
+
 pip install openpyxl
+
 pip install PySimpleGUI
+
 pip install pathlib
+
 
 3 - Open the editor_comment17.py file in sublime and leave the pgn you want to edit/translate in the same folder as the editor_comment17.py file.
 After running the first time, check if the excel files were saved: original_comments.xlsx and translated_comments.xlsx. Then go to googletraduror and choose the option to translate document and choose the original_comments.xlsx file, after the translator finishes the translation, copy and paste in the other translated_comments.xlsx file and delete the 2 cell where "original_comments" is written.
@@ -60,10 +66,15 @@ https://www.sublimetext.com/
 2 - Depois pra instalar as bibliotecas vá no menu iniciar e digite cmd. Abra o prompt de comando e digite os seguintes comandos (um de cada vez.):
 
 pip install pandas
+
 pip install xlrd
+
 pip install XlsxWriter
+
 pip install openpyxl
+
 pip install PySimpleGUI
+
 pip install pathlib
 
 3 - Abra o arquivo editor_coment17.py no sublime e deixe o pgn que deseja editar/traduzir na mesma pasta que estiver o arquivo editor_coment17.py.
