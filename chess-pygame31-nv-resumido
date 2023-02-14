@@ -1,0 +1,611 @@
+import datetime
+import time
+import cv2
+import math
+import pygame
+import chess
+import chess.pgn
+import chess.svg
+from numpy.matlib import zeros, ones
+import glob
+sp2 = pygame.image.load("images/chesspieces-output510_t2.png");
+background = pygame.image.load("images/chessbg725c92ac8.png");
+cavalo2 = pygame.image.load("Chess Images/Final/chess-1483089__136.png");
+background2 = pygame.image.load("Chess Images/Final/dy6.png");
+def main(pgn, p):
+    t = time.time()
+    first_game = chess.pgn.read_game(open(pgn))
+    board = first_game.board()   
+    f1 = board.fen()
+    bboard = zeros((8,8)) # matrix    
+    def func_bboard(bboard,f1):
+        row = 0
+        col = 0        
+        fesp = f1.find(' ')
+        for c in f1[0:fesp]:
+                if c == 'K':
+                    bboard[row,col] = 8
+                    col += 1
+                elif c == 'Q':
+                    bboard[row,col] = 9
+                    col += 1
+                elif c == 'P':
+                    bboard[row,col] = 1
+                    col += 1
+                elif c == 'R':
+                    bboard[row,col] = 5
+                    col += 1    
+                elif c == 'B':
+                    bboard[row,col] = 4
+                    col += 1
+                elif c == 'N':
+                    bboard[row,col] = 3
+                    col += 1           
+                elif c == 'k':
+                    bboard[row,col] = -8
+                    col += 1
+                elif c == 'q':
+                    bboard[row,col] = -9
+                    col += 1
+                elif c == 'p':
+                    bboard[row,col] = -1
+                    col += 1
+                elif c == 'r':
+                    bboard[row,col] = -5
+                    col += 1
+                elif c == 'b':
+                    bboard[row,col] = -4
+                    col += 1
+                elif c == 'n':
+                    bboard[row,col] = -3
+                    col += 1  
+                elif c in '12345678':
+                    col += int(c)
+                elif c == '/':
+                    col = 0
+                    row += 1
+                else: print('erro?')
+        return bboard
+    
+    func_bboard(bboard,f1)
+    print(bboard)
+    p1 = first_game.headers["White"]
+    p2 = first_game.headers["Black"]
+    r1 = first_game.headers["Result"]
+    eco1 = first_game.headers["ECO"]
+    e1 = first_game.headers["Event"]
+    s1 = first_game.headers["Site"]
+    dd1 = first_game.headers["Date"]
+    rd1 = first_game.headers["Round"]
+    print(p1, 'vs', p2, r1, eco1, e1, s1, dd1)  
+    dd2 = dd1[0:4]
+    #Video de introducao
+    fps = 30; # FPS
+    dt = f"{datetime.datetime.now():%Y-%m-%d-%H-%M-%S}"
+    #np = p1+' vs '+p2+' '+r1+' '+eco1+' '+e1+' '+s1+' '+dd2+' '
+    np = 'Chess Game '+str(p+1)+'-'+ p1+' vs '+p2+' '+eco1+' '+e1+' '+s1+' '+dd2    
+    img_array = []
+    for filename in glob.glob('Chess Images/redimensionadas/*.jpg'):
+        img = cv2.imread(filename)
+        height, width, layers = img.shape
+        img_array.append(img)
+    out = cv2.VideoWriter(np+dt+'-t1.mp4',cv2.VideoWriter_fourcc(*'DIVX'), fps, (width,height))
+    for i in range(len(img_array)):
+        out.write(img_array[i])
+        
+    lat = []
+    llg = []
+    fnb = []
+    vsv = []
+    cmt = []    
+    lg = 1
+    ct = 0;
+
+    # Define uma função recursiva para percorrer as variações
+    bd = first_game.board()
+    node = first_game
+    variante_level = -1
+    var_select = 0
+    
+    def search_variations(node,var_select,variante_level,lat,llg,fnb,ct,vsv,cmt):
+        print("Entrando na funcao search_variations")
+        numero_lances_interno = 0 #numero_lances_interno
+        variante_level += 1
+        print("###############")
+        next_node = node.variations[var_select]
+        print(next_node.move)
+        lanceatual = node.board().san(next_node.move)
+        print(lanceatual)
+        lat.append(lanceatual)
+        lancelong = str(bd.parse_san(lanceatual))
+        print(lancelong)
+        llg.append(lancelong)
+        fnb.append(bd.fen())
+        vsv.append(var_select)
+        bd.push(next_node.move)
+        print(bd)
+        print("primeiro avanco - fora do if main line")
+        print("Comentário:",next_node.comment)
+        cmt.append(next_node.comment)
+        print("###############")
+        node = next_node
+        ct += 1;
+        numero_lances_interno += 1 
+        #input("Press Enter to continue...")   
+        while node.is_end() == 0:
+            print("Aqui2")
+            if len(node.variations) == 1: # if do avanco simples na linha principal ou fora de variantes
+                print("###############")
+                next_node = node.variations[0]
+                print(next_node.move)
+                lanceatual = node.board().san(next_node.move)
+                print(lanceatual)
+                lat.append(lanceatual)
+                lancelong = str(bd.parse_san(lanceatual))
+                print(lancelong)
+                llg.append(lancelong)
+                fnb.append(bd.fen())
+                vsv.append(var_select)
+                bd.push(next_node.move)
+                print(bd)
+                print("dentro do if main line")
+                print("Comentário:",next_node.comment)
+                cmt.append(next_node.comment)
+                print("###############")
+                node = next_node
+                ct += 1;
+                numero_lances_interno += 1
+                #input("Press Enter to continue...") 
+            if len(node.variations) > 1:
+                print("###############")
+                print("dentro de uma variante do primeiro nível")
+                n = len(node.variations)
+                vec = range(1,n)
+                print(vec)
+                variante_level = 1 # sai do nivel zero
+                for var_select in vec:
+                    print("###############")
+                    print("var_select:",var_select)
+                    #input("Press Enter to continue...")           
+                    search_variations(node,var_select,variante_level,lat,llg,fnb,ct,vsv,cmt)
+                    #print("vec[-1]",vec[-1])
+                    #print("vec[0]",vec[0])
+                    if var_select == vec[-1]:
+                        #print("Aqui")
+                        print("###############")
+                        next_node = node.variations[0]
+                        print(next_node.move)
+                        lanceatual = node.board().san(next_node.move)
+                        print(lanceatual)
+                        lat.append(lanceatual)
+                        lancelong = str(bd.parse_san(lanceatual))
+                        print(lancelong)
+                        llg.append(lancelong)
+                        fnb.append(bd.fen())
+                        vsv.append(var_select)
+                        bd.push(next_node.move)
+                        print(bd)
+                        print("avanco ao sair da funcao")
+                        print("Comentário:",next_node.comment)
+                        cmt.append(next_node.comment)
+                        print("###############")
+                        node = next_node
+                        ct += 1;
+                        numero_lances_interno += 1
+                        if node.is_mainline() == 1:
+                           variante_level = 0
+        if node.is_end() == 1 and variante_level != 0: # variante chegou ao fim, deve-se retornar ao ponto de divergencia
+            print("Rebobinando")
+            #input("Press Enter to continue...") 
+            for i in range(numero_lances_interno):
+                            print("###############")
+                            print("i",i)
+                            # Volta para o estado anterior do tabuleiro
+                            bd.pop()  
+                            node = node.parent
+                            print("voltando os lances")
+                            print(bd)
+                            print("###############")
+            print("saindo da funcao: search_variations com var_select:",var_select)
+            lat.append("0")            
+            llg.append("0")
+            fnb.append(bd.fen())
+            vsv.append(var_select)
+            cmt.append("Nova Variante")
+            ct += 1;
+            return            
+        return lat,llg,fnb,ct,vsv,cmt
+    
+    
+    [lat,llg,fnb,ct,vsv,cmt] = search_variations(node,var_select,variante_level,lat,llg,fnb,ct,vsv,cmt)
+
+    print("ct:",ct)    
+    print("lat:")
+    print(lat)  
+    print("llg:")
+    print(llg)
+    print("fnb:")
+    print(fnb)
+    print("vsv:")
+    print(vsv)
+    ct = len(lat)         
+    print('ct =', ct)
+    rct = math.ceil(ct/2)
+    print(rct, 'lances')
+    
+    lall = -1*ones((ct,10))
+    
+    ct2 = 0;
+    while ct2 < ct:
+            if lat[ct2] == 'O-O': # roque pequeno
+                ltemp = list(llg[ct2])
+                lall[ct2,0] = ord(ltemp[0]) - 97
+                lall[ct2,1] = abs(int(ltemp[1]) - 8)
+                lall[ct2,2] = ord(ltemp[2]) - 97
+                lall[ct2,3] = abs(int(ltemp[3]) - 8)
+                if ltemp[3] == '1':
+                    lall[ct2,4] = 7
+                    lall[ct2,5] = 8 - 1
+                    lall[ct2,6] = 5
+                    lall[ct2,7] = 8 - 1
+                else:
+                    lall[ct2,4] = 7
+                    lall[ct2,5] = 1 - 1
+                    lall[ct2,6] = 5
+                    lall[ct2,7] = 1 - 1
+            elif lat[ct2] == 'O-O-O': # roque grande
+                ltemp = list(llg[ct2])
+                lall[ct2,0] = ord(ltemp[0]) - 97
+                lall[ct2,1] = abs(int(ltemp[1]) - 8)
+                lall[ct2,2] = ord(ltemp[2]) - 97
+                lall[ct2,3] = abs(int(ltemp[3]) - 8)
+                if ltemp[3] == '1':
+                    lall[ct2,4] = 0
+                    lall[ct2,5] = 8 - 1
+                    lall[ct2,6] = 3
+                    lall[ct2,7] = 8 - 1
+                else:
+                    lall[ct2,4] = 0
+                    lall[ct2,5] = 1 - 1
+                    lall[ct2,6] = 3
+                    lall[ct2,7] = 1 - 1
+            elif lat[ct2] == '0':
+                lall[ct2,8] = -10
+                lall[ct2,9] = -10
+            elif lat[ct2].find('=') != -1: #promoção de peças
+                ltemp = list(llg[ct2])
+                lall[ct2,0] = ord(ltemp[0]) - 97
+                lall[ct2,1] = abs(int(ltemp[1]) - 8)
+                lall[ct2,2] = ord(ltemp[2]) - 97
+                lall[ct2,3] = abs(int(ltemp[3]) - 8)
+                lall[ct2,5] = -3
+                piq = (lat[ct2].find('=') + 1)
+                ltemp3 = lat[ct2]
+                print(ltemp3[piq])
+                if ct2 % 2 != 0:
+                    paq = -1
+                if ct2 % 2 == 0:    
+                    paq = 1
+                if ltemp3[piq] == 'K':
+                    lall[ct2,6] = 8*paq
+                elif ltemp3[piq] == 'Q':
+                    lall[ct2,6] = 9*paq
+                elif ltemp3[piq] == 'P':
+                    lall[ct2,6] = 1*paq
+                elif ltemp3[piq] == 'R':
+                    lall[ct2,6] = 5*paq
+                elif ltemp3[piq] == 'B':
+                    lall[ct2,6] = 4*paq
+                elif ltemp3[piq] == 'N':
+                    lall[ct2,6] = 3*paq                
+            else: # captura de peao -> tratar o en passant
+                ltemp2 = lat[ct2]
+                if lat[ct2].find('x') != -1 and lat[ct2].find('x') == 1 and ltemp2[(lat[ct2].find('x') - 1)].islower() == 1:
+                    ltemp = list(llg[ct2])
+                    lall[ct2,0] = ord(ltemp[0]) - 97
+                    lall[ct2,1] = abs(int(ltemp[1]) - 8)
+                    lall[ct2,2] = ord(ltemp[2]) - 97
+                    lall[ct2,3] = abs(int(ltemp[3]) - 8)
+                    lall[ct2,5] = -2                   
+                else:    
+                    ltemp = list(llg[ct2])
+                    #print(llg[ct2])
+                    lall[ct2,0] = ord(ltemp[0]) - 97
+                    lall[ct2,1] = abs(int(ltemp[1]) - 8)
+                    lall[ct2,2] = ord(ltemp[2]) - 97
+                    lall[ct2,3] = abs(int(ltemp[3]) - 8)                
+            ct2 += 1;    
+    print(lall)
+    print(lat)    
+    pygame.init()   
+    pygame.font.init()
+    fonte_22 = pygame.font.SysFont("arial", 23)
+    fonte_18 = pygame.font.SysFont("arial", 23)
+    #audio_lance = pygame.mixer.Sound("sounds/move0.wav") # audio
+    largura = 1366  #725
+    altura = 768  #408
+    ##fps = 30; # FPS    
+    screenSize = largura,altura;
+    tela = pygame.display.set_mode(screenSize);
+    pygame.display.set_caption("ChessGamesVideos")
+    relogio = pygame.time.Clock()    
+    cor_branca = (255,255,255)
+    cv = (255,0,0) #cor_vermelha
+    cpt = (0,0,0) #cor_preta
+    d1 = round(24*768/408)#diagonal do tabuleiro
+    tmfont = 1;
+    n = 0
+    sair = False
+    while sair != True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sair = True
+                
+        relogio.tick(5) # taxa de atualizacao do pygame    
+        tela.fill(cor_branca)
+        tela.blit(background,[0,0],[0,0,largura,altura])
+
+        pr = round(5*768/408)
+        espac = round(12*768/408)
+        dbd = round(490*768/408) #distancia da borda
+        
+        # comentários
+        text10 = fonte_22.render('Comentários: ', tmfont, cpt)
+        tela.blit(text10, (dbd+280,pr))
+
+        if n <= ct -1:
+            comentario = cmt[n]
+            if len(comentario) > 0:
+                counter = 0
+                speed = 3
+                done = False
+                run = True
+                while counter <= len(comentario):
+                    if counter < speed * len(comentario):
+                        counter += 1
+                    elif counter >= speed * len(comentario):
+                        done = True
+                    cs = counter//speed        
+                    text11 = fonte_22.render(comentario[0:cs], tmfont, cpt)
+                    tela.blit(text11, (dbd-140,pr+7*espac-10))
+        
+        #Nome das Brancas
+        text1 = fonte_22.render(('White: '+p1), tmfont, cpt)        
+        tela.blit(text1, (dbd,pr))
+        #Nome das Pretas
+        text2 = fonte_22.render(('Black: '+p2), tmfont, cpt)
+        tela.blit(text2, (dbd,pr+espac))        
+        #text5 = fonte_22.render(('Result: '+r1), tmfont, cpt)
+        #tela.blit(text5, (dbd,pr+70))        
+        text6 = fonte_22.render(('Eco: '+eco1), tmfont, cpt)
+        tela.blit(text6, (dbd,pr+2*espac))        
+        text7 = fonte_22.render(('Event: '+e1), tmfont, cpt)
+        tela.blit(text7, (dbd,pr+3*espac))        
+        text8 = fonte_22.render(('Round: '+rd1), tmfont, cpt)
+        tela.blit(text8, (dbd,pr+4*espac))        
+        text9 = fonte_22.render(('Site: '+s1), tmfont, cpt)
+        tela.blit(text9, (dbd,pr+5*espac))        
+        text10 = fonte_22.render(('Date: '+dd1), tmfont, cpt)
+        tela.blit(text10, (dbd,pr+6*espac))        
+        tacs = round(45*768/408) # tamanho das casas do tabuleiro e das figuras nele.
+        espret = 4;# espessura dos retangulos
+        
+        for yt in range(0,8):
+                for xt in range(0,8):
+                            #x = randint(0, 5)
+                            #y = randint(0, 1)
+                        #pygame.draw.rect(tela, cor_preta, [d1+int(lall[n,2])*45,d1+int(lall[n,3])*45, 45,45], 2)    
+                        if bboard[yt,xt] == -5:
+                            x = 4;
+                            y = 1;                        
+                            tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                            if n <= ct-1:
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret)
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret) 
+                        elif bboard[yt,xt] == -3:
+                             x = 3;
+                             y = 1;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret)
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret) 
+                        elif bboard[yt,xt] == -4:
+                             x = 2;
+                             y = 1;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret)
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret) 
+                        elif bboard[yt,xt] == -9:
+                             x = 1;
+                             y = 1;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret)
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret) 
+                        elif bboard[yt,xt] == -8:
+                             x = 0;
+                             y = 1;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret)
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret) 
+                        elif bboard[yt,xt] == -1:
+                             x = 5;
+                             y = 1;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret)
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret) 
+                        elif bboard[yt,xt] == 5:
+                             x = 4;
+                             y = 0;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:  
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret)
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret)
+                        elif bboard[yt,xt] == 3:
+                             x = 3;
+                             y = 0;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:  
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret)
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret)
+                                
+                        elif bboard[yt,xt] == 4:
+                             x = 2;
+                             y = 0;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret) 
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret)
+                                
+                        elif bboard[yt,xt] == 9:
+                             x = 1;
+                             y = 0;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:  
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret) 
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret)
+                        elif bboard[yt,xt] == 8:
+                             x = 0;
+                             y = 0;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:  
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret) 
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret)
+                        elif bboard[yt,xt] == 1:
+                             x = 5;
+                             y = 0;
+                             tela.blit(sp2,[d1+xt*tacs,d1+yt*tacs],[x*tacs,y*tacs,tacs,tacs])
+                             if n <= ct-1:   
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,2])*tacs,d1+int(lall[n,3])*tacs, tacs,tacs], espret) 
+                                pygame.draw.rect(tela, cv, [d1+int(lall[n,0])*tacs,d1+int(lall[n,1])*tacs, tacs,tacs], espret)
+
+        pf1 = 782
+        qf1 = round(100*768/408) #188
+        cf1 = round(43*768/408) #81
+        cf2 = round(33*768/408) #62
+        #cf3 = round(38*768/408)
+        sf1 = round(15*768/408)
+        sf2 = round(7.5*768/408)
+        cf3 = round(50*768/408)
+        
+        pf2 = pf1 + cf1
+        pf3 = pf2 + cf2
+        pf4 = pf3 + cf1
+        pf5 = pf4 + cf2
+        pf6 = pf5 + cf1
+        pf7 = pf6 + cf2
+        pf8 = pf7 + cf1        
+        # imprimir lances na tela.        
+        if n <= ct -1:
+         rg = n+1
+        else: 
+         rg = ct   
+        for ii in range(0,rg):
+                if ii <= 40-1 and ii % 2 == 0:
+                    text3 = fonte_18.render((str(round(ii/2)+1)+"." + lat[ii]), tmfont, cpt)
+                    tela.blit(text3,  (pf1, round(qf1+ii*sf2)))
+                    if ii == n:
+                        pygame.draw.rect(tela, cv, [pf1-2,round(qf1-1+ii*sf2), cf1,sf1], 2)                    
+                if ii <= 40-1 and ii % 2 != 0:
+                    text4 = fonte_18.render(lat[ii], tmfont, cpt)
+                    tela.blit(text4,  (pf2, qf1+round((ii-1)*sf2)))
+                    if ii == n:
+                        pygame.draw.rect(tela, cv, [pf2-2,round(qf1-1+(ii-1)*sf2), cf2,sf1], 2)
+                #######################################################        
+                if ii > 40-1 and ii <= 80-1 and ii % 2 == 0:
+                    text3 = fonte_18.render((str(round(ii/2)+1)+"." + lat[ii]), tmfont, cpt)
+                    tela.blit(text3,  (pf3, round(qf1+(ii-40)*sf2)))
+                    if ii == n:
+                        pygame.draw.rect(tela, cv, [pf3-2,round(qf1-1+(ii-40)*sf2), cf1,sf1], 2)                    
+                if ii > 40-1 and ii <= 80-1 and ii % 2 != 0:
+                    text4 = fonte_18.render(lat[ii], tmfont, cpt)
+                    tela.blit(text4,  (pf4, qf1+round((ii-41)*sf2)))
+                    if ii == n:
+                        pygame.draw.rect(tela, cv, [pf4-2,round(qf1-1+(ii-41)*sf2), cf2,sf1], 2)
+                #######################################################         
+                if ii > 80-1 and ii <= 120-1 and ii % 2 == 0:
+                    text3 = fonte_18.render((str(round(ii/2)+1)+"." + lat[ii]), tmfont, cpt)
+                    tela.blit(text3,  (pf5, round(qf1+(ii-80)*sf2)))
+                    if ii == n:
+                        pygame.draw.rect(tela, cv, [pf5-2,round(qf1-1+(ii-80)*sf2), cf1,sf1], 2)                    
+                if ii > 80-1 and ii <= 120-1 and ii % 2 != 0:
+                    text4 = fonte_18.render(lat[ii], tmfont, cpt)
+                    tela.blit(text4,  (pf6, qf1+round((ii-81)*sf2)))
+                    if ii == n:
+                        pygame.draw.rect(tela, cv, [pf6-2,round(qf1-1+(ii-81)*sf2), cf2,sf1], 2)
+                #######################################################
+                if ii > 120-1 and ii <= 160-1 and ii % 2 == 0:
+                    text3 = fonte_18.render((str(round(ii/2)+1)+"." + lat[ii]), tmfont, cpt)
+                    tela.blit(text3,  (pf7, round(qf1+(ii-120)*sf2)))
+                    if ii == n:
+                        pygame.draw.rect(tela, cv, [pf7-2,round(qf1-1+(ii-120)*sf2), cf1,sf1], 2)                    
+                if ii > 120-1 and ii <= 160-1 and ii % 2 != 0:
+                    text4 = fonte_18.render(lat[ii], tmfont, cpt)
+                    tela.blit(text4,  (pf8, qf1+round((ii-121)*sf2)))
+                    if ii == n:
+                        pygame.draw.rect(tela, cv, [pf8-2,round(qf1-1+(ii-121)*sf2), cf2,sf1], 2)                    
+        color_image = pygame.surfarray.array3d(tela)
+        color_image = cv2.transpose(color_image)
+        color_image = cv2.cvtColor(color_image, cv2.COLOR_RGB2BGR)
+        for ex in range(1,2*fps):
+            out.write(color_image)
+        pygame.display.update()       
+        #### Entrar aqui somente uma vez adicionar a logica pra isso quando n >= ct
+        if n >= ct and lg == 1 :
+            lg == 0;
+            text5 = fonte_22.render(('Result: '+r1), tmfont, cpt)
+            tela.blit(text5, (pf5,pr+6*espac))
+            pygame.draw.rect(tela, cv, [pf5-2,pr+6*espac, cf3,sf1], 2)
+            pygame.display.update()            
+            color_image = pygame.surfarray.array3d(tela)
+            color_image = cv2.transpose(color_image)
+            color_image = cv2.cvtColor(color_image, cv2.COLOR_RGB2BGR)            
+            for ed in range(1,4*fps):
+                out.write(color_image)
+            sair = True
+            #Video dE Finalização   
+            img_array = []
+            #for filename in glob.glob('Chess Images/*.jpg'):
+            for filename in glob.glob('Chess Images/Inicio/*.jpg'):
+                img = cv2.imread(filename)
+                height, width, layers = img.shape
+                #print(height, width, layers)
+                #size = (width,height)
+                img_array.append(img)
+            for i in range(len(img_array)):
+                out.write(img_array[i])            
+            out.release()           
+            # lógica de movimentação das peças           
+        if n <= ct-1:            
+            if int(lall[n,8]) == -10 and int(lall[n,9]) == -10:
+               nboard = zeros((8,8))
+               bboard = func_bboard(nboard,fnb[n])                         
+            if int(lall[n,4]) == -1 and int(lall[n,5]) == -1:
+               bboard[int(lall[n,3]),int(lall[n,2])] = bboard[int(lall[n,1]),int(lall[n,0])]
+               bboard[int(lall[n,1]),int(lall[n,0])] = 0               
+            elif int(lall[n,4]) != -1:
+               bboard[int(lall[n,3]),int(lall[n,2])] = bboard[int(lall[n,1]),int(lall[n,0])]
+               bboard[int(lall[n,1]),int(lall[n,0])] = 0
+               bboard[int(lall[n,7]),int(lall[n,6])] = bboard[int(lall[n,5]),int(lall[n,4])]
+               bboard[int(lall[n,5]),int(lall[n,4])] = 0               
+            elif int(lall[n,5]) == -3: # promocao de peças
+                   bboard[int(lall[n,3]),int(lall[n,2])] = int(lall[n,6])
+                   bboard[int(lall[n,1]),int(lall[n,0])] = 0                   
+            elif int(lall[n,5]) == -2: # en passant
+                if bboard[int(lall[n,3]),int(lall[n,2])] == 0:
+                   bboard[int(lall[n,3]),int(lall[n,2])] = bboard[int(lall[n,1]),int(lall[n,0])]
+                   bboard[int(lall[n,1]),int(lall[n,0])] = 0
+                   bboard[int(lall[n,1]),int(lall[n,2])] = 0 # en passant
+                else:    
+                   bboard[int(lall[n,3]),int(lall[n,2])] = bboard[int(lall[n,1]),int(lall[n,0])]
+                   bboard[int(lall[n,1]),int(lall[n,0])] = 0
+            #audio_lance.play             
+            #pygame.mixer.Sound.play(audio_lance) # som dos lances           
+            n += 1
+           #print(n)
+            elapsed = time.time() - t
+            print(elapsed)        
+    pygame.quit()    
