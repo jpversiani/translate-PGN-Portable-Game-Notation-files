@@ -1,4 +1,4 @@
-# Code to help translate PGN files (Portable Game Notation).
+# Code to help translate PGN files (Portable Game Notation)
 
 Portable Game Notation (PGN) is a standard plain text format for recording chess games (both the moves and related data), which can be read by humans and is also supported by most chess software.
 
